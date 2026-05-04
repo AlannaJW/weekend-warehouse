@@ -28,8 +28,8 @@ If you're a hiring manager, the short version of what's in here:
 - **Identity resolution** across sources that don't share a clean key —
   customers are matched by normalized email even when casing varies between
   systems and some checkouts have no CRM record at all.
-- A **dbt project** with staging → marts layering, 6 dbt tests (unique, not_null, accepted_values, composite-key uniqueness, and 2 custom totals-match integrity tests), and auto-generated lineage docs.
-- A **real debugging story.** A custom totals-match integrity test caught a $638K discrepancy in a customer-lifetime aggregate, which traced to a subtle SCD2 multi-version aggregation issue. The diagnosis and fix are documented in DECISIONS.md entries #4 and #5.
+- A **dbt project** with staging → marts layering, auto-generated lineage docs, and 6 dbt tests covering uniqueness, not-null constraints, accepted values, composite-key uniqueness, and two custom totals-match integrity tests.
+- A **real debugging story.** A custom totals-match integrity test caught a $638K discrepancy in a customer-lifetime aggregate, which traced to a subtle SCD2 multi-version aggregation issue. The diagnosis and fix are documented in [`DECISIONS.md`](./DECISIONS.md) entries #4 and #5.
 - **Documented AI workflow** — see [`DECISIONS.md`](./DECISIONS.md) and
   [`prompts/`](./prompts/) for the prompts that drove each stage and the
   cases where I overrode the AI suggestion.
