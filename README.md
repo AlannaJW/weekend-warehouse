@@ -30,9 +30,7 @@ If you're a hiring manager, the short version of what's in here:
   systems and some checkouts have no CRM record at all.
 - A **dbt project** with staging → marts layering, auto-generated lineage docs, and 6 dbt tests covering uniqueness, not-null constraints, accepted values, composite-key uniqueness, and two custom totals-match integrity tests.
 - A **real debugging story.** A custom totals-match integrity test caught a $638K discrepancy in a customer-lifetime aggregate, which traced to a subtle SCD2 multi-version aggregation issue. The diagnosis and fix are documented in [`DECISIONS.md`](./DECISIONS.md) entries #4 and #5.
-- **Documented AI workflow** — see [`DECISIONS.md`](./DECISIONS.md) and
-  [`prompts/`](./prompts/) for the prompts that drove each stage and the
-  cases where I overrode the AI suggestion.
+- **Documented AI workflow** — see [`DECISIONS.md`](./DECISIONS.md) for the cases where I overrode the AI suggestion and why.
 
 ---
 
@@ -98,7 +96,7 @@ Three layers in the warehouse:
 
 ## How I worked with AI on this
 
-I scoped the architecture and decided what to build before writing any code. AI drafted each dbt model; I reviewed every one for correctness and convention before it was committed. The prompts that drove each stage are saved in [`prompts/`](./prompts/) — unpolished and in order, not retrofitted. Where I pushed back on an AI suggestion, I noted the reasoning rather than just making the change silently.
+I scoped the architecture and decided what to build before writing any code. AI drafted each dbt model; I reviewed every one for correctness and convention before it was committed. Where I pushed back on an AI suggestion, I noted the reasoning rather than just making the change silently.
 
 [`DECISIONS.md`](./DECISIONS.md) is the paper trail: six entries covering cases where AI's first pass was wrong or incomplete, from column-selection conventions to a multi-step debugging session that caught a $638K aggregation error. It's the place to look if you want to understand where the judgment calls happened and why.
 
@@ -114,7 +112,6 @@ weekend-warehouse/
 │   ├── generate.py        ← synthetic data (stdlib only, no external deps)
 │   └── requirements.txt
 ├── data/raw/              ← generated CSVs (gitignored; regenerate locally)
-├── prompts/               ← the actual prompts used at each stage
 ├── dbt_project/           ← the dbt project (models, tests, docs)
 └── docs/
     └── setup.md           ← BigQuery setup guide
