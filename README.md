@@ -8,8 +8,11 @@ quality testing, and pre-aggregation for dashboards — and openly documents
 how AI was used at each step so reviewers can see both the engineering and
 the AI-augmented workflow.
 
-> **Status:** in progress (weekend build). See [project status](#project-status)
-> for what's done vs. what's left.
+---
+
+## Live dashboard
+
+[View the Looker Studio dashboard](https://datastudio.google.com/reporting/88b40f6f-005f-4fa0-95ea-f61e1491f2be) — daily revenue trends, acquisition channel mix, and customer tier distribution.
 
 ---
 
@@ -25,10 +28,8 @@ If you're a hiring manager, the short version of what's in here:
 - **Identity resolution** across sources that don't share a clean key —
   customers are matched by normalized email even when casing varies between
   systems and some checkouts have no CRM record at all.
-- A **dbt project** with staging → intermediate → marts layering, tests on
-  surrogate keys and referential integrity, and auto-generated lineage docs.
-- A **Looker Studio dashboard** answering specific business questions
-  ([view dashboard](https://datastudio.google.com/reporting/88b40f6f-005f-4fa0-95ea-f61e1491f2be)).
+- A **dbt project** with staging → marts layering, 6 dbt tests (unique, not_null, accepted_values, composite-key uniqueness, and 2 custom totals-match integrity tests), and auto-generated lineage docs.
+- A **real debugging story.** A custom totals-match integrity test caught a $638K discrepancy in a customer-lifetime aggregate, which traced to a subtle SCD2 multi-version aggregation issue. The diagnosis and fix are documented in DECISIONS.md entries #4 and #5.
 - **Documented AI workflow** — see [`DECISIONS.md`](./DECISIONS.md) and
   [`prompts/`](./prompts/) for the prompts that drove each stage and the
   cases where I overrode the AI suggestion.
@@ -85,49 +86,21 @@ flowchart LR
     ACL --> LS
 ```
 
-The high-level shape:
-
-```
-  raw_orders.csv      ─┐
-  raw_customers.csv   ─┼──► BigQuery raw dataset ──► dbt ──► star schema ──► Looker Studio
-  raw_tier_history    ─┤      (3 sources)              (staging→marts→agg)     (dashboard)
-  raw_web_events.csv  ─┘
-```
-
 Three layers in the warehouse:
 
 | Layer | Schema | What lives here |
 | --- | --- | --- |
 | Raw | `raw` | CSV uploads from the source-system mocks, untouched. |
 | Staging | `staging` | One model per source: type-cast, renamed columns, test rows filtered. |
-| Marts | `marts` | `fct_orders`, `dim_customer` (SCD2), `dim_date`. |
-| Reporting | `marts` | `agg_revenue_daily` (pre-aggregated for the dashboard). |
+| Marts | `marts` | `fct_orders`, `dim_customer` (SCD2), `dim_date`, `agg_revenue_daily`, `agg_customer_lifetime`. |
 
 ---
 
 ## How I worked with AI on this
 
-This project is partly a demonstration of how to *use* AI productively on
-real engineering work, not just what AI can produce. The workflow:
+I scoped the architecture and decided what to build before writing any code. AI drafted each dbt model; I reviewed every one for correctness and convention before it was committed. The prompts that drove each stage are saved in [`prompts/`](./prompts/) — unpolished and in order, not retrofitted. Where I pushed back on an AI suggestion, I noted the reasoning rather than just making the change silently.
 
-1. **I wrote the project scope and architecture** before any code was generated.
-   AI didn't decide what we'd build, in what order, or what patterns to use.
-2. **AI drafted code, I reviewed every model**. For each dbt model, AI wrote
-   a first pass, I reviewed it for correctness and convention, and changes
-   went into the file. The places where I pushed back are logged in
-   [`DECISIONS.md`](./DECISIONS.md).
-3. **Prompts are committed**. The `prompts/` directory contains the actual
-   prompts I used at key decision points, not retrofitted ones. They're
-   imperfect — that's the point.
-4. **I tested everything I committed**. The dbt tests in this project all
-   exist because I asked "what could break this?" and translated the answer
-   into a test, often with AI's help drafting the SQL.
-
-The [`DECISIONS.md`](./DECISIONS.md) log captures real moments where AI
-suggested something I rejected or modified, with the reasoning. Examples
-include explicit column lists over `SELECT *`, splitting a too-large model
-into staging + intermediate + mart, and adding `unique` tests on surrogate
-keys that AI didn't propose by default.
+[`DECISIONS.md`](./DECISIONS.md) is the paper trail: six entries covering cases where AI's first pass was wrong or incomplete, from column-selection conventions to a multi-step debugging session that caught a $638K aggregation error. It's the place to look if you want to understand where the judgment calls happened and why.
 
 ---
 
@@ -144,7 +117,7 @@ weekend-warehouse/
 ├── prompts/               ← the actual prompts used at each stage
 ├── dbt_project/           ← the dbt project (models, tests, docs)
 └── docs/
-    └── architecture.svg   ← architecture diagram
+    └── setup.md           ← BigQuery setup guide
 ```
 
 ---
@@ -221,6 +194,22 @@ totals despite the orphan rows.
 
 ---
 
+## What I'd build next
+
+This project is intentionally small — a weekend's worth of work to show the core patterns. A few directions I'd take it next:
+
+**Real CDC ingestion.** Replace the manual CSV loads with continuous change-data-capture via Fivetran, Airbyte, or Debezium. The dbt project wouldn't change; only the upstream loading would.
+
+**Incremental materialization on `fct_orders`.** At any real scale, rebuilding the whole fact table on every `dbt run` is wasteful. Switching to dbt's `incremental` materialization with `unique_key = order_id` would drop rebuild times from minutes to seconds as the table grows.
+
+**CI on dbt pull requests.** A GitHub Actions workflow that runs `dbt build` on every PR against an isolated CI dataset, catching model-breaking changes before merge. Roughly 50 lines of YAML; high signal-to-effort ratio.
+
+**A `fct_web_sessions` fact table.** Sessionize the web-event stream (30-minute inactivity gap) and roll it up into a fact table. Unlocks funnel and conversion analysis — the natural next analytical question once revenue is solved.
+
+**Fix the orphan orders.** Address the 3,270 NULL-customer_sk rows documented under Known limitations by extending each customer's earliest `valid_from` to cover their first order date. Roughly 20 lines of SQL in `dim_customer.sql` plus a `not_null` test on the foreign key.
+
+---
+
 ## Project status
 
 - [x] Synthetic data generator
@@ -230,8 +219,8 @@ totals despite the orphan rows.
 - [x] Marts: `fct_orders`, `dim_customer` (SCD2), `dim_date`
 - [x] Aggregates: `agg_revenue_daily`, `agg_customer_lifetime`
 - [x] Tests (accepted values, uniqueness, referential integrity, totals-match assertions)
-- [ ] Looker Studio dashboard
-- [ ] Architecture diagram + final docs polish
+- [x] Looker Studio dashboard
+- [x] Architecture diagram + final docs polish
 
 ---
 

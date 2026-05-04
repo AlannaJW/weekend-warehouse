@@ -76,9 +76,13 @@ Modeling the pipeline correctly matters more than convenience.
 
 **Why this matters.** SCD2's surrogate key is the correct join target for point-in-time questions ("what tier was the customer when they placed this order?") but the wrong key for lifetime aggregation ("how much has this customer spent across all of time?"). The two question types require different keys; mixing them silently produces wrong totals and no errors.
 
+Fixing this surfaced a second issue; see #5.
+
 ---
 
 ## #5 — Email as conformed identity for cross-version aggregation
+
+This entry is the second half of the debugging story that began in #4.
 
 **Context.** While fixing entry #4, the totals-match test continued to flag a $559K gap. Investigation showed `fct_orders` had 3,270 rows with `NULL customer_key` because the synthetic data generator allowed orders to occur outside any SCD2 tier-period date range — a real-world data-quality scenario.
 
@@ -90,18 +94,14 @@ Modeling the pipeline correctly matters more than convenience.
 
 ---
 
-<!--
-Template for new entries:
+## #6 — Stack: BigQuery + dbt + Looker Studio
 
-## #N — Short title
+**Context.** Picking the analytical stack at project start.
 
-**Context.**
+**Considered.** DuckDB (local, free, modern, but lower resume recognition); Snowflake (free 30-day trial, high recognition, slightly more setup overhead); BigQuery (generous free tier, native Looker Studio integration, broadly recognized).
 
-**AI suggested.**
+**Chose.** BigQuery + dbt + Looker Studio.
 
-**I changed it to.**
-
-**Why.**
+**Why.** BigQuery's free tier covered the project's scale at zero cost. Looker Studio plugs in natively, simplifying the dashboard layer. The combination is one of the most common stacks at modern data teams, which makes it generalizable to interview discussion. DuckDB would have added a local-portability story at the cost of a less-recognized tool name. Snowflake would have added prestige with no marginal pedagogical value over BigQuery for this project's scope.
 
 ---
--->
