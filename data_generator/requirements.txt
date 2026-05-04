@@ -1,0 +1,6 @@
+# No external dependencies required.
+# The generator uses only the Python standard library so it runs anywhere.
+#
+# (We initially used Faker for richer names/emails, but removed it to keep
+# the project zero-dependency and clone-and-run for anyone reviewing the repo.
+# See DECISIONS.md for the full reasoning.)

@@ -1,0 +1,43 @@
+# dbt project config for weekend-warehouse.
+#
+# Models follow the standard dbt layering convention:
+#   staging/      → light cleanup, one model per source table
+#   intermediate/ → joins and identity resolution (not materialized as tables)
+#   marts/        → fct_* and dim_* tables, materialized for end-user queries
+#   aggregates/   → pre-rolled-up tables for dashboard performance
+
+name: 'weekend_warehouse'
+version: '1.0.0'
+config-version: 2
+
+profile: 'weekend_warehouse'   # matches profiles.yml entry
+
+# Path config
+model-paths: ["models"]
+analysis-paths: ["analyses"]
+test-paths: ["tests"]
+seed-paths: ["seeds"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# Per-folder materialization defaults.
+# Staging stays as views (cheap, always fresh).
+# Intermediate stays ephemeral (inlined into downstream models, no extra tables).
+# Marts and aggregates land as physical tables.
+models:
+  weekend_warehouse:
+    staging:
+      +materialized: view
+      +schema: staging
+    intermediate:
+      +materialized: ephemeral
+    marts:
+      +materialized: table
+      +schema: marts
+    aggregates:
+      +materialized: table
+      +schema: marts

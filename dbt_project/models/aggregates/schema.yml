@@ -1,0 +1,9 @@
+version: 2
+
+models:
+  - name: agg_customer_lifetime
+    columns:
+      - name: customer_key
+        tests:
+          - unique
+          - not_null

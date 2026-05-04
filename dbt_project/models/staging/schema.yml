@@ -1,0 +1,16 @@
+version: 2
+
+models:
+  - name: stg_tier_history
+    tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - crm_id
+              - valid_from
+    columns:
+      - name: tier
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['Bronze', 'Silver', 'Gold']

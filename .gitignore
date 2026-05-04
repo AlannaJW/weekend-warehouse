@@ -1,0 +1,17 @@
+# dbt
+dbt_project/target/
+dbt_project/logs/
+dbt_project/dbt_packages/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.env
+
+# Credentials
+*.json
+
+# OS
+.DS_Store
+Thumbs.db
