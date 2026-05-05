@@ -43,11 +43,10 @@ generator, or in dbt's `seeds/` directory.
 **I changed it to.** A separate `data/raw/` directory at the repo root,
 loaded into BigQuery as proper raw tables.
 
-**Why.** dbt's `seeds/` directory is reserved for small reference tables
+**Why.** dbt's `seeds/` directory usually has small reference tables
 (country codes, holiday calendars) that ship with the dbt project. Treating
-30K-row event data as a "seed" would be misuse — these belong in a `raw`
-dataset in BigQuery, loaded the same way real source data would arrive.
-Modeling the pipeline correctly matters more than convenience.
+30K-row event data as a "seed" would be confusing — they are better put in a `raw`
+dataset in BigQuery, loaded and organized how a real source data would be.
 
 ---
 
